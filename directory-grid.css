@@ -1,0 +1,228 @@
+/* Filterable Directory Grid Styles */
+
+.directory__grid {
+  padding-bottom: 2rem;
+  padding-top: 2rem;
+  position: relative;
+}
+
+@media (min-width: 1280px) {
+  .directory__grid {
+    padding-bottom: 3rem;
+    padding-top: 3rem;
+  }
+}
+
+.directory__grid--wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .directory__grid--wrapper {
+    flex-direction: row;
+  }
+}
+
+.directory__grid--filter-container {
+  min-width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .directory__grid--filter-container {
+    min-width: 16rem;
+  }
+}
+
+.directory__grid--filters {
+  width: 100%;
+}
+
+.directory__grid--filters-wrapper {
+  border-radius: 1.5rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  border: 1px solid rgb(229 231 235);
+  padding: 1rem 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.directory__grid--filters-wrapper h5 {
+  margin-bottom: 1.5rem;
+}
+
+.directory__grid--filters-wrapper ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.directory__grid--filters-wrapper li {
+  cursor: pointer;
+  margin-bottom: 15px;
+  min-height: 18px;
+  padding-left: 28px;
+  position: relative;
+}
+
+/* Custom checkbox */
+.directory__grid--filters-wrapper li::before {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px transparent;
+  content: '';
+  display: block;
+  height: 16px;
+  left: 0;
+  position: absolute;
+  top: 3px;
+  transition: all 0.15s ease;
+  width: 16px;
+}
+
+/* Checkmark */
+.directory__grid--filters-wrapper li::after {
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  content: '';
+  display: block;
+  height: 9px;
+  left: 6px;
+  position: absolute;
+  top: 5px;
+  transform: rotate(45deg);
+  width: 4px;
+  z-index: 1;
+}
+
+/* Checked state */
+.directory__grid--filters-wrapper li[aria-checked='true']::before {
+  background-color: var(--accent-color, #2563eb);
+  border-color: var(--accent-color, #2563eb);
+}
+
+/* Grid items */
+.directory__grid--items {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .directory__grid--items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1440px) {
+  .directory__grid--items {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.directory__grid--items .load-more {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .directory__grid--items .load-more {
+    grid-column: span 2 / span 2;
+  }
+}
+
+@media (min-width: 1440px) {
+  .directory__grid--items .load-more {
+    grid-column: span 3 / span 3;
+  }
+}
+
+/* Card */
+.directory__item {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.directory__item--link {
+  border-radius: 1.5rem;
+  border: 1px solid rgb(229 231 235);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 100%;
+  justify-content: space-between;
+  padding: 1.5rem;
+  text-decoration-line: none;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.directory__item--link:hover {
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.directory__item--image {
+  align-items: center;
+  display: flex;
+  height: 12rem;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+.directory__item--image img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  width: auto;
+  height: auto;
+}
+
+.directory__item--title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.directory__item--desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Loading skeleton */
+.directory__item.loading .directory__item--link:hover {
+  outline: none;
+}
+
+@keyframes pulse {
+  50% { opacity: 0.5; }
+}
+
+.directory__item.loading .directory__item--desc,
+.directory__item.loading .directory__item--image,
+.directory__item.loading .directory__item--title {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  border-radius: 0.5rem;
+  background-color: rgb(229 231 235);
+  opacity: 0.5;
+}
+
+.directory__item.loading .directory__item--desc,
+.directory__item.loading .directory__item--title {
+  color: transparent;
+}
+
+/* Vue cloak */
+[v-cloak] {
+  display: none;
+}

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Integration Directory</title>
+  <link rel="stylesheet" href="directory-grid.css">
+  <style>
+    :root { --accent-color: #2563eb; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; color: #1a1a1a; background: #f9fafb; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; }
+    h4 { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; }
+    p { line-height: 1.6; color: #4b5563; }
+    a { color: inherit; }
+    .btn.outline {
+      background: transparent;
+      border: 2px solid var(--accent-color);
+      border-radius: 0.5rem;
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn.outline:hover { background: var(--accent-color); color: #fff; }
+  </style>
+</head>
+<body>
+  <header style="background: var(--accent-color); color: #fff; padding: 1.5rem 0;">
+    <div class="container">
+      <h1 style="font-size: 1.5rem; font-weight: 700;">Integration Directory</h1>
+    </div>
+  </header>
+
+  <main style="padding: 2rem 0;">
+    <div id="directory-app" v-cloak>
+      <div class="directory__grid container">
+        <div class="directory__grid--wrapper">
+
+          <!-- Sidebar Filters -->
+          <div class="directory__grid--filter-container">
+
+            <!-- Region Filters -->
+            <div class="directory__grid--filters">
+              <template v-if="anyRegions">
+                <div class="directory__grid--filters-wrapper">
+                  <h5>Region</h5>
+                  <ul>
+                    <li @click="toggleAllRegions"
+                        :class="{ 'selected': selectedRegions.length === regions.length }"
+                        role="checkbox"
+                        :aria-checked="selectedRegions.length === regions.length ? 'true' : 'false'"
+                        tabindex="0">
+                      All
+                    </li>
+                    <li v-for="region in regions" :key="region.slug"
+                        @click="toggleRegion(region.slug)"
+                        @keydown.space.prevent="toggleRegion(region.slug)"
+                        :class="{ 'selected': selectedRegions.includes(region.slug) }"
+                        role="checkbox"
+                        :aria-checked="selectedRegions.includes(region.slug) ? 'true' : 'false'"
+                        tabindex="0">
+                      {{ region.name }}
+                    </li>
+                  </ul>
+                </div>
+              </template>
+            </div>
+
+            <!-- Category Filters -->
+            <div class="directory__grid--filters">
+              <template v-if="anyCategories">
+                <div class="directory__grid--filters-wrapper">
+                  <h5>Category</h5>
+                  <ul>
+                    <li @click="toggleAllCategories"
+                        :class="{ 'selected': selectedCategories.length === categories.length }"
+                        role="checkbox"
+                        :aria-checked="selectedCategories.length === categories.length ? 'true' : 'false'"
+                        tabindex="0">
+                      All
+                    </li>
+                    <li v-for="category in categories" :key="category.slug"
+                        :class="{ 'selected': selectedCategories.includes(category.slug) }"
+                        @click="toggleCategory(category.slug)"
+                        role="checkbox"
+                        tabindex="0"
+                        :aria-checked="selectedCategories.includes(category.slug) ? 'true' : 'false'">
+                      {{ category.name }}
+                    </li>
+                  </ul>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Grid Items -->
+          <div class="directory__grid--items">
+
+            <!-- Loading Skeleton -->
+            <template v-if="isLoading">
+              <div v-for="item in filteredItems" :key="item.id" class="loading directory__item">
+                <a class="directory__item--link">
+                  <div class="directory__item--image"></div>
+                  <h5 class="directory__item--title">Loading...</h5>
+                  <p class="directory__item--desc">Placeholder text for loading state...</p>
+                </a>
+              </div>
+            </template>
+
+            <!-- Active Items -->
+            <template v-else-if="anyActive && !isLoading">
+              <div v-for="item in filteredItems"
+                   :key="item.id"
+                   class="directory__item"
+                   v-show="item.active">
+                <a :href="item.link"
+                   target="_blank"
+                   class="directory__item--link">
+                  <div class="directory__item--image">
+                    <img v-if="item.thumbnail" :src="item.thumbnail" :alt="`Logo for ${item.title}`" />
+                    <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:0.5rem;color:#6b7280;font-size:2rem;font-weight:700;">
+                      {{ item.title.charAt(0) }}
+                    </div>
+                  </div>
+                  <h4 v-html="item.title"></h4>
+                  <p v-html="item.excerpt"></p>
+                </a>
+              </div>
+              <div class="load-more">
+                <button v-if="hasMore"
+                        @click="loadMore"
+                        class="directory__grid--more btn outline">
+                  Load More
+                </button>
+              </div>
+            </template>
+
+            <!-- No Results -->
+            <template v-else>
+              <p style="display: block; padding: 2rem; text-align: center; color: #6b7280;">
+                No results matching the selected filters.
+              </p>
+            </template>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="directory-data.js"></script>
+  <script src="directory-app.js"></script>
+</body>
+</html>
