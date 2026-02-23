@@ -1,6 +1,7 @@
 # Partner Directory
+These are not production modules. However, it is a generisized and slimmed down version of what I have made for Enterprise corporations.
 
-A reusable, filterable card grid built with **Vue 3** (Composition API). Designed for partner/integration directories, app marketplaces, or any catalog that needs multi-dimensional filtering.
+A reusable, filterable card grid built with **Vue 3** (Composition API). Designed for partner/integration directories, app marketplaces, or any catalog that needs multi-dimensional filtering. 
 
 ## Features
 
