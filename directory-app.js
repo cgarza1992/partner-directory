@@ -3,6 +3,7 @@
  *
  * A reusable filterable card grid with:
  * - Multi-select region/category checkbox filters
+ * - GeoIP-based region detection (simulated via browser locale)
  * - URL parameter sync (shareable filter states)
  * - Relevance scoring with priority ordering
  * - Load-more pagination
@@ -12,7 +13,6 @@
 document.addEventListener('DOMContentLoaded', function () {
   Vue.createApp({
     setup() {
-      // Initialize selected platform/tab
       const selectedPlatform = Vue.ref('');
 
       const selectPlatform = (slug) => {
@@ -20,9 +20,23 @@ document.addEventListener('DOMContentLoaded', function () {
         applyFilters();
       };
 
-      // Initialize reactive filter options from external data
       const regions = Vue.reactive(initialRegions);
       const categories = Vue.reactive(initialCategories);
+
+      // Detect region from browser locale (simulates GeoIP)
+      const detectRegionFromLocale = () => {
+        const lang = (navigator.language || 'en-US').toLowerCase();
+        if (/^(en-gb|en-ie|de|fr|es-es|it|nl|pl|sv|da|fi|nb|pt-pt)/.test(lang)) return 'europe';
+        if (/^(ja|zh|ko|en-au|en-nz|en-sg|id|th|vi)/.test(lang)) return 'asia-pacific';
+        if (/^(pt-br|es-ar|es-co|es-cl|es-pe)/.test(lang)) return 'latin-america';
+        return 'north-america';
+      };
+
+      const detectedRegionSlug = detectRegionFromLocale();
+      const detectedRegion = Vue.computed(() => {
+        const found = regions.find(r => r.slug === detectedRegionSlug);
+        return found ? found.name : 'North America';
+      });
 
       // Read initial filter state from URL
       const urlParams = new URLSearchParams(window.location.search);
@@ -37,7 +51,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const isLoading = Vue.ref(true);
       const isLoadMoreLoading = Vue.ref(false);
 
-      // Initialize items with reactive properties
+      // Copy state
+      const copied = Vue.ref(false);
+
       const items = Vue.reactive(
         initialItems.map((item) => ({
           ...item,
@@ -49,18 +65,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }))
       );
 
-      // Computed helpers
       const anyActive = Vue.computed(() => items.some((item) => item.active));
       const anyRegions = Vue.computed(() => regions.length > 0);
       const anyCategories = Vue.computed(() => categories.length > 0);
 
-      /**
-       * Sync selected filters to URL parameters
-       */
+      // True when the user has narrowed filters below "all"
+      const filtersActive = Vue.computed(() => {
+        return (
+          selectedRegions.value.length > 0 && selectedRegions.value.length < regions.length ||
+          selectedCategories.value.length > 0 && selectedCategories.value.length < categories.length
+        );
+      });
+
+      const matchCount = Vue.computed(() => items.filter(i => i.active).length);
+
       const syncUrlParams = () => {
         const params = new URLSearchParams(window.location.search);
-
-        // Clean stale params
         params.delete('region[]');
         params.delete('category[]');
 
@@ -83,9 +103,13 @@ document.addEventListener('DOMContentLoaded', function () {
         history.pushState(null, '', `${window.location.pathname}?${params.toString()}`);
       };
 
-      /**
-       * Load more items
-       */
+      const copyShareUrl = () => {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          copied.value = true;
+          setTimeout(() => { copied.value = false; }, 2000);
+        });
+      };
+
       const loadMore = () => {
         isLoadMoreLoading.value = true;
         pageSize.value += 12;
@@ -95,7 +119,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return items.filter((item) => item.active).length > pageSize.value;
       });
 
-      // Activate initial items on first render
       const activateInitialItems = () => {
         Vue.nextTick(() => {
           const count = Math.min(items.length, pageSize.value);
@@ -105,9 +128,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       };
 
-      /**
-       * Toggle a category filter
-       */
       const toggleCategory = (slug) => {
         const index = selectedCategories.value.indexOf(slug);
         if (index > -1) {
@@ -119,9 +139,6 @@ document.addEventListener('DOMContentLoaded', function () {
         syncUrlParams();
       };
 
-      /**
-       * Toggle a region filter
-       */
       const toggleRegion = (slug) => {
         const index = selectedRegions.value.indexOf(slug);
         if (index > -1) {
@@ -159,62 +176,30 @@ document.addEventListener('DOMContentLoaded', function () {
         syncUrlParams();
       };
 
-      /**
-       * Filtered, scored, sorted, and paginated items
-       */
       const filteredItems = Vue.computed(() => {
         applyFilters();
 
         const active = items.filter((item) => item.active);
-
-        console.group('%c[Directory Scoring]', 'color: #6366f1; font-weight: bold');
-        console.log(`Active items: ${active.length} / ${items.length}`);
-        console.log(`Filters — Regions: [${selectedRegions.value.join(', ')}] | Categories: [${selectedCategories.value.join(', ')}]`);
 
         const sorted = active.sort((a, b) => {
           const aPriority = a.priority || 0;
           const bPriority = b.priority || 0;
           const aScore = a.score || 0;
           const bScore = b.score || 0;
-
-          // Primary: lower priority number first (sponsored/paid placement)
-          if (aPriority !== bPriority) {
-            return aPriority - bPriority;
-          }
-          // Tiebreaker: higher relevance score first
+          if (aPriority !== bPriority) return aPriority - bPriority;
           return bScore - aScore;
         });
 
         const page = sorted.slice(0, pageSize.value);
 
-        console.log(`Displaying: ${page.length} (of ${active.length} active, page size: ${pageSize.value})`);
-        console.table(
-          page.map((item, i) => ({
-            '#': i + 1,
-            title: item.title,
-            priority: item.priority || 0,
-            score: item.score || 0,
-            regions: item.regions.join(', '),
-            categories: item.categories.map((c) => c.slug).join(', '),
-          }))
-        );
-        console.groupEnd();
-
         if (!isLoadMoreLoading.value) {
-          setTimeout(() => {
-            isLoading.value = false;
-          }, 2000);
+          setTimeout(() => { isLoading.value = false; }, 2000);
         }
 
         return page;
       });
 
-      /**
-       * Apply filter matching and calculate relevance scores
-       */
       const applyFilters = () => {
-        const scoreBreakdowns = [];
-
         items.forEach((item) => {
           const matchedRegions = selectedRegions.value.length > 0
             ? item.regions.filter((r) => selectedRegions.value.includes(r.toLowerCase().trim()))
@@ -228,33 +213,10 @@ document.addEventListener('DOMContentLoaded', function () {
           const categoryMatch = selectedCategories.value.length === 0 || matchedCategories.length > 0;
 
           item.active = regionMatch && categoryMatch;
-
-          // Calculate relevance score
-          const regionScore = matchedRegions.length;
-          const categoryScore = matchedCategories.length;
-          item.score = regionScore + categoryScore;
-
-          if (item.active) {
-            scoreBreakdowns.push({
-              title: item.title,
-              regionScore,
-              categoryScore,
-              total: item.score,
-              matchedRegions: matchedRegions.join(', ') || '(all)',
-              matchedCategories: matchedCategories.map((c) => c.slug).join(', ') || '(all)',
-            });
-          }
+          item.score = matchedRegions.length + matchedCategories.length;
         });
-
-        console.group('%c[Filter Scoring Breakdown]', 'color: #10b981; font-weight: bold');
-        console.log(`${scoreBreakdowns.length} items matched filters`);
-        console.table(scoreBreakdowns);
-        console.groupEnd();
       };
 
-      /**
-       * Read filter state from URL (for back/forward navigation)
-       */
       const readFiltersFromUrl = () => {
         const params = new URLSearchParams(window.location.search);
         const urlRegions = params.get('region');
@@ -277,20 +239,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       };
 
-      // React to filter changes
       Vue.watch([selectedRegions, selectedCategories, selectedPlatform], applyFilters, {
         immediate: true,
       });
 
-      // Handle browser back/forward
       window.addEventListener('popstate', () => readFiltersFromUrl());
 
-      // Initialize
       Vue.onMounted(() => {
         activateInitialItems();
         readFiltersFromUrl();
 
-        // Default to all selected if no URL params
         if (selectedRegions.value.length === 0 && selectedCategories.value.length === 0) {
           toggleAllRegions();
           toggleAllCategories();
@@ -319,6 +277,11 @@ document.addEventListener('DOMContentLoaded', function () {
         allRegionsSelected,
         toggleCategory,
         filteredItems,
+        detectedRegion,
+        filtersActive,
+        matchCount,
+        copied,
+        copyShareUrl,
       };
     },
   }).mount('#directory-app');
